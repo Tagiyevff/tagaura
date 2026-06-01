@@ -68,7 +68,7 @@ If you don't want to chat and just need a quick utility, TagAura acts as a CLI t
 ## ⚠️ Security Warning
 
 TagAura can execute real commands on your host operating system. While dangerous commands (like `rm`, `format`, `del`) are intercepted and require explicit human-in-the-loop (Y/N) confirmation, you should still supervise its actions carefully.
-<img src="assets/logo.png" width="200" />
+<img src="ss.png" width="200" />
 
 ---
 *Built with ❤️ for true autonomous terminal control.*
