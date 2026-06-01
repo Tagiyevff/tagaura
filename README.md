@@ -3,6 +3,9 @@
   <p><strong>A Next-Generation, Autonomous AI CLI Agent & System Administrator</strong></p>
 </div>
 
+<p align="center">
+  <img src="ss.png" width="1000" />
+</p>
 TagAura is a powerful, autonomous CLI-based AI agent designed to run directly in your terminal. It goes beyond simple chat; it's a fully functional system administrator, developer, and automation tool. Powered by LiteLLM, it supports multiple top-tier models like Mistral, OpenAI, Anthropic, Gemini, and DeepSeek.
 
 ## 🚀 Features
@@ -68,7 +71,7 @@ If you don't want to chat and just need a quick utility, TagAura acts as a CLI t
 ## ⚠️ Security Warning
 
 TagAura can execute real commands on your host operating system. While dangerous commands (like `rm`, `format`, `del`) are intercepted and require explicit human-in-the-loop (Y/N) confirmation, you should still supervise its actions carefully.
-<img src="ss.png" width="200" />
+
 
 ---
 *Built with ❤️ for true autonomous terminal control.*
