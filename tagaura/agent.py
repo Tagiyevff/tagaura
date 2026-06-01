@@ -44,6 +44,8 @@ def start_chat(provider, model, api_key):
         os.environ["OPENROUTER_API_KEY"] = api_key
     elif "z.ai" in provider_lower or "zhipu" in provider_lower:
         os.environ["ZHIPUAI_API_KEY"] = api_key
+    elif "groq" in provider_lower:
+        os.environ["GROQ_API_KEY"] = api_key
     else:
         os.environ[f"{provider_lower.upper()}_API_KEY"] = api_key
 
@@ -153,6 +155,8 @@ CRITICAL RULES:
                 litellm_model = f"openrouter/{model}"
             elif "z.ai" in provider_lower or "zhipu" in provider_lower:
                 litellm_model = f"zhipu/{model}"
+            elif "groq" in provider_lower:
+                litellm_model = f"groq/{model}"
                 
             tools = [
                 {
