@@ -24,7 +24,11 @@ PROVIDERS = {
         "deepseek-r1", "deepseek-v3", "deepseek-v2.5", "deepseek-coder-v2", "deepseek-coder-v1"
     ],
     "OpenRouter": [
-        "openrouter/auto", "anthropic/claude-3-opus", "openai/gpt-4o", "google/gemini-pro"
+        "openrouter/auto", "anthropic/claude-3-opus", "openai/gpt-4o", "google/gemini-pro",
+        "moonshotai/kimi-k2.6:free", "openai/gpt-oss-120b:free", "z-ai/glm-4.5-air:free"
+    ],
+    "Groq": [
+        "llama-3.3-70b-versatile", "llama-3.1-8b-instant"
     ],
     "Z.ai (Zhipu AI)": [
         "glm-4.5", "glm-4", "glm-3.5", "glm-4-flash", "glm-4-air"
