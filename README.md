@@ -44,6 +44,10 @@ tga
 ```
 *On first launch, it will guide you to select your preferred AI provider (Mistral, OpenAI, Gemini, etc.) and save your API key securely.*
 
+<p align="center">
+  <img src="ss.png" width="200"/>
+</p>
+
 ## 💡 Usage Examples
 
 **Inside the interactive TagAura terminal:**
