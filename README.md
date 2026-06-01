@@ -44,10 +44,6 @@ tga
 ```
 *On first launch, it will guide you to select your preferred AI provider (Mistral, OpenAI, Gemini, etc.) and save your API key securely.*
 
-<p align="center">
-  <img src="ss.png" width="200"/>
-</p>
-
 ## 💡 Usage Examples
 
 **Inside the interactive TagAura terminal:**
@@ -72,6 +68,7 @@ If you don't want to chat and just need a quick utility, TagAura acts as a CLI t
 ## ⚠️ Security Warning
 
 TagAura can execute real commands on your host operating system. While dangerous commands (like `rm`, `format`, `del`) are intercepted and require explicit human-in-the-loop (Y/N) confirmation, you should still supervise its actions carefully.
+<img src="assets/logo.png" width="200" />
 
 ---
 *Built with ❤️ for true autonomous terminal control.*
