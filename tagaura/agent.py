@@ -14,6 +14,10 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.styles import Style
 from tagaura.config import get_memory, add_to_memory
 import getpass
+import warnings
+
+# İstenmeyen soket/kaynak uyarılarını gizle
+warnings.simplefilter("ignore", ResourceWarning)
 
 console = Console()
 session = PromptSession()
@@ -74,7 +78,11 @@ CRITICAL RULES:
 7. SILENT SUCCESS: When an operation succeeds, just give a short one-sentence confirmation in the user's language. Do NOT show the long scripts or execution steps to the user.
 8. IGNORE PAST TASKS: Do not bring up or summarize past completed tasks from the conversation history when the user just says hello or starts a new session. Focus only on their current message.
 9. PERMANENT MEMORY: When the user tells you personal information (their name, age, preferences) or explicitly asks you to remember something, you MUST call the `memorize` tool to save it. Do not just say "I noted it", you must actually call the tool!
-10. FILE OPERATIONS: You have native tools (`read_file`, `write_file`, `replace_in_file`) to create projects or fix code. ALWAYS use them instead of bash/powershell to write files!"""
+10. FILE OPERATIONS: You have native tools (`read_file`, `write_file`, `replace_in_file`) to create projects or fix code. ALWAYS use them instead of bash/powershell to write files!
+11. WEB SEARCH: You have access to the internet. If you need documentation or a solution to an error, use `search_web` to find it, then `read_url` to read the page content.
+12. GUI AUTOMATION: You have the `control_gui` tool to physically control the mouse and keyboard using PyAutoGUI python scripts. You can use it to open apps, click buttons, or type text if the user requests it.
+13. BACKGROUND TASKS: You can use `run_background_task` to start daemon threads. Use this for scheduled cron jobs (using time.sleep or schedule module) or heavy processing that shouldn't block the chat interface.
+14. MULTI-AGENT SWARM: You have the `delegate_task` tool. If a task is very complex, requires critical review (like writing a big algorithm), or requires a second opinion, SPAWN A SUB-AGENT to do it for you. The sub-agent will do the heavy lifting and report back to you."""
 
     # Kalıcı hafızayı (Permanent Memory) yükle
     memory_facts = get_memory()
@@ -255,6 +263,103 @@ CRITICAL RULES:
                             "required": ["path", "old_text", "new_text"]
                         }
                     }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "search_web",
+                        "description": "DuckDuckGo üzerinden web araması yapar ve en iyi sonuçların başlık, özet ve URL bilgilerini döndürür.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "query": {
+                                    "type": "string",
+                                    "description": "Arama sorgusu (Örn: 'React 19 yeni özellikler' veya 'Python ValueError çözümü')"
+                                },
+                                "max_results": {
+                                    "type": "integer",
+                                    "description": "Döndürülecek maksimum sonuç sayısı (Varsayılan: 5)"
+                                }
+                            },
+                            "required": ["query"]
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "read_url",
+                        "description": "Verilen bir URL adresine gidip web sayfasının içindeki tüm metin içeriğini (HTML etiketlerinden arındırılmış saf metni) okur.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "Okunacak web sayfasının tam adresi (URL)"
+                                }
+                            },
+                            "required": ["url"]
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "control_gui",
+                        "description": "Bilgisayarın faresi ve klavyesi üzerinde fiziksel kontrol sağlar. Ekranda tıklama yapmak, yazı yazmak veya kısayol tuşlarına basmak için Python PyAutoGUI kodlarını (script) çalıştırır.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "action_script": {
+                                    "type": "string",
+                                    "description": "Çalıştırılacak PyAutoGUI python kodu. Örn: 'import pyautogui; pyautogui.click(100, 200); pyautogui.write(\"Hello\")'"
+                                }
+                            },
+                            "required": ["action_script"]
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "run_background_task",
+                        "description": "Belirli bir Python kodunu arka planda yeni bir işlem (Thread) olarak çalıştırır. Terminaldeki sohbeti dondurmadan arka planda sürekli çalışması gereken görevler, sunucular veya zamanlanmış (schedule) işlemler için kullanılır.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "task_name": {
+                                    "type": "string",
+                                    "description": "Görevin adı (Örn: 'HavaDurumu_Kontrol')"
+                                },
+                                "script": {
+                                    "type": "string",
+                                    "description": "Arka planda çalıştırılacak Python kodu. Sürekli çalışması için while döngüsü içerebilir veya 'schedule' modülü kullanabilir."
+                                }
+                            },
+                            "required": ["task_name", "script"]
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "delegate_task",
+                        "description": "Karmaşık bir problemi çözmek, kod incelemesi yaptırmak veya paralel bir araştırma yaptırmak için başka bir (Alt / Sub) Yapay Zeka ajanı yaratır ve ona görev verir. Bu ajan çalışıp sana sonuçları döndürür.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "agent_role": {
+                                    "type": "string",
+                                    "description": "Alt ajanın rolü (Örn: 'Senior Code Reviewer', 'Security Expert', 'Data Analyst')"
+                                },
+                                "task_description": {
+                                    "type": "string",
+                                    "description": "Alt ajanın yapması gereken görevin detaylı açıklaması."
+                                }
+                            },
+                            "required": ["agent_role", "task_description"]
+                        }
+                    }
                 }
             ]
 
@@ -270,12 +375,30 @@ CRITICAL RULES:
                         response = None
                         for attempt in range(3):
                             try:
-                                response = litellm.completion(
-                                    model=litellm_model,
-                                    messages=messages,
-                                    stream=True,
-                                    tools=tools
-                                )
+                                if "openrouter" in provider_lower:
+                                    from openai import OpenAI
+                                    client = OpenAI(
+                                        base_url="https://openrouter.ai/api/v1",
+                                        api_key=os.environ.get("OPENROUTER_API_KEY", "")
+                                    )
+                                    # OpenRouter'a kendi model ismiyle direkt istek at (Örn: openai/gpt-oss-120b:free)
+                                    response = client.chat.completions.create(
+                                        model=model,
+                                        messages=messages,
+                                        stream=True,
+                                        tools=tools,
+                                        extra_headers={
+                                            "HTTP-Referer": "https://tagaura.app",
+                                            "X-Title": "TagAura"
+                                        }
+                                    )
+                                else:
+                                    response = litellm.completion(
+                                        model=litellm_model,
+                                        messages=messages,
+                                        stream=True,
+                                        tools=tools
+                                    )
                                 break
                             except Exception as e:
                                 if "rate limit" in str(e).lower() or "429" in str(e):
@@ -452,6 +575,93 @@ CRITICAL RULES:
                                     output = "Error: Target 'old_text' not found in file."
                             except Exception as e:
                                 output = f"Error: {str(e)}"
+                                
+                        elif func_name == "search_web":
+                            query = args.get("query", "")
+                            max_results = args.get("max_results", 5)
+                            try:
+                                from ddgs import DDGS
+                                console.print(f"\n[dim cyan]🔍 Webde aranıyor: {query}[/dim cyan]")
+                                results = DDGS().text(query, max_results=max_results)
+                                output = json.dumps(list(results), indent=2, ensure_ascii=False)
+                            except Exception as e:
+                                output = f"Arama hatası: {str(e)}"
+                                
+                        elif func_name == "read_url":
+                            url = args.get("url", "")
+                            try:
+                                import requests
+                                from bs4 import BeautifulSoup
+                                console.print(f"\n[dim cyan]🌐 Sayfa okunuyor: {url}[/dim cyan]")
+                                headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+                                resp = requests.get(url, headers=headers, timeout=10)
+                                resp.raise_for_status()
+                                soup = BeautifulSoup(resp.text, "html.parser")
+                                # Sadece metin içeren kısımları al
+                                output = soup.get_text(separator=' ', strip=True)
+                                if len(output) > 15000:
+                                    output = output[:15000] + "\n\n... [SAYFA ÇOK UZUN, KESİLDİ]"
+                            except Exception as e:
+                                output = f"Sayfa okuma hatası: {str(e)}"
+                                
+                        elif func_name == "control_gui":
+                            action_script = args.get("action_script", "")
+                            try:
+                                import pyautogui
+                                console.print("\n[dim magenta]🖱️  GUI Automating...[/dim magenta]")
+                                local_env = {"pyautogui": pyautogui}
+                                exec(action_script, globals(), local_env)
+                                output = "GUI action executed successfully."
+                            except Exception as e:
+                                output = f"GUI error: {str(e)}"
+                                
+                        elif func_name == "run_background_task":
+                            task_name = args.get("task_name", "Unknown_Task")
+                            script = args.get("script", "")
+                            try:
+                                import threading
+                                def bg_job(name, code):
+                                    try:
+                                        exec(code, globals())
+                                    except Exception as e:
+                                        with open(f"tagaura_bg_{name}_error.log", "w", encoding="utf-8") as f:
+                                            f.write(str(e))
+                                            
+                                t = threading.Thread(target=bg_job, args=(task_name, script), daemon=True)
+                                t.start()
+                                console.print(f"\n[dim magenta]⏳ Background Task Started: {task_name}[/dim magenta]")
+                                output = f"Task '{task_name}' successfully started in the background."
+                            except Exception as e:
+                                output = f"Failed to start background task: {str(e)}"
+                                
+                        elif func_name == "delegate_task":
+                            agent_role = args.get("agent_role", "Assistant")
+                            task_description = args.get("task_description", "")
+                            try:
+                                console.print(f"\n[dim magenta]🤖 Spawning Sub-Agent [{agent_role}]...[/dim magenta]")
+                                sub_messages = [
+                                    {"role": "system", "content": f"You are a specialized AI Sub-Agent. Your role is: {agent_role}. Solve the task efficiently and strictly provide the requested output. Do NOT use markdown code blocks if the user prohibits it, follow the prompt."},
+                                    {"role": "user", "content": task_description}
+                                ]
+                                
+                                if "openrouter" in provider_lower:
+                                    sub_resp = client.chat.completions.create(
+                                        model=model,
+                                        messages=sub_messages,
+                                        extra_headers={"HTTP-Referer": "https://tagaura.app", "X-Title": "TagAura"}
+                                    )
+                                    sub_output = sub_resp.choices[0].message.content
+                                else:
+                                    sub_resp = litellm.completion(
+                                        model=litellm_model,
+                                        messages=sub_messages
+                                    )
+                                    sub_output = sub_resp.choices[0].message.content
+                                    
+                                output = f"Sub-Agent '{agent_role}' completed the task. Result:\n{sub_output}"
+                                console.print(f"[dim green]✅ Sub-Agent [{agent_role}] finished successfully.[/dim green]")
+                            except Exception as e:
+                                output = f"Failed to delegate task: {str(e)}"
                             
                         messages.append({
                             "role": "tool",
