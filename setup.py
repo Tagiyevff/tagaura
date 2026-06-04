@@ -10,7 +10,12 @@ setup(
         "questionary",
         "litellm",
         "psutil",
-        "cryptography"
+        "cryptography",
+        "ddgs",
+        "requests",
+        "beautifulsoup4",
+        "pyautogui",
+        "schedule"
     ],
     entry_points={
         "console_scripts": [
