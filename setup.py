@@ -18,7 +18,9 @@ setup(
         "schedule",
         "plyer",
         "watchdog",
-        "pyngrok"
+        "pyngrok",
+        "SpeechRecognition",
+        "pyaudio"
     ],
     entry_points={
         "console_scripts": [
