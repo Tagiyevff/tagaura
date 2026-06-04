@@ -121,7 +121,7 @@ def execute(**kwargs):
     console.clear()
     console.print(TAGAURA_LOGO)
     console.print(f"[dim]Provider: {provider} | Model: {model}[/dim]")
-    console.print("[dim]Type 'exit' or 'quit' to quit. Type 'settings' to change model. Press 'Ctrl+C' to cancel.[/dim]\n")
+    console.print("[dim]Type 'help' to see all available commands. Press 'Ctrl+C' to cancel.[/dim]\n")
     
     if len(messages) > 1:
         console.print("[dim italic]Chat history loaded from memory...[/dim italic]\n")
@@ -146,8 +146,39 @@ def execute(**kwargs):
                 console.print("\n[bold yellow]⚠️ Please restart TagAura for the new settings to take effect (type 'exit' and then run 'tga' again).[/bold yellow]")
                 continue
                 
-            if not user_input.strip():
+            if user_input.strip().lower() == 'help':
+                console.print("\n[bold cyan]🛠️ TagAura Commands:[/bold cyan]")
+                console.print("  [green]help[/green]       : Shows this help menu")
+                console.print("  [green]exit[/green]       : Quits the TagAura session")
+                console.print("  [green]settings[/green]   : Change the default AI provider and model")
+                console.print("  [green]/voice[/green]     : Activates the microphone for Voice Command")
+                console.print("  [green](Enter)[/green]    : Pressing Enter with empty input also activates Voice Command")
+                console.print("")
                 continue
+
+            if not user_input.strip() or user_input.strip().lower() == '/voice':
+                try:
+                    import speech_recognition as sr
+                    recognizer = sr.Recognizer()
+                    with sr.Microphone() as source:
+                        console.print("\n[bold cyan]🎙️ Dinleniyor... (Konuşun)[/bold cyan]")
+                        recognizer.adjust_for_ambient_noise(source)
+                        audio = recognizer.listen(source, timeout=5, phrase_time_limit=15)
+                    console.print("[dim]🔄 Ses yazıya çevriliyor...[/dim]")
+                    user_input = recognizer.recognize_google(audio, language="tr-TR")
+                    console.print(f"[bold green]Sen (Sesli):[/bold green] {user_input}")
+                except ImportError:
+                    console.print("[red]Ses modülü eksik. Lütfen 'pip install SpeechRecognition pyaudio' komutunu çalıştırın.[/red]")
+                    continue
+                except sr.UnknownValueError:
+                    console.print("[red]Ses anlaşılamadı. Lütfen tekrar deneyin.[/red]")
+                    continue
+                except sr.WaitTimeoutError:
+                    console.print("[dim]Ses duyulmadı, dinleme iptal edildi.[/dim]")
+                    continue
+                except Exception as e:
+                    console.print(f"[red]Mikrofon hatası: {e}[/red]")
+                    continue
 
             # ÖNEMLİ İŞLEMLERDE ONAY KISMI (Human-in-the-loop)
             dangerous_keywords = ["sil", "kaldır", "format", "rm ", "delete"]
