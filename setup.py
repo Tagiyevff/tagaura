@@ -15,7 +15,10 @@ setup(
         "requests",
         "beautifulsoup4",
         "pyautogui",
-        "schedule"
+        "schedule",
+        "plyer",
+        "watchdog",
+        "pyngrok"
     ],
     entry_points={
         "console_scripts": [
