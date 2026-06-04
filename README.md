@@ -10,6 +10,16 @@ TagAura is a powerful, autonomous CLI-based AI agent designed to run directly in
 
 ## 🚀 Features
 
+* **🧩 Open Architecture Plugin System (Hot-Reloading):**
+  TagAura can be infinitely extended via the `tagaura/plugins/` directory. Just drop a Python file there, and TagAura instantly learns a new skill. Thanks to the **Hot-Reload** feature, you don't even need to restart the agent!
+* **🌱 Self-Expanding AI:**
+  You can ask TagAura to create a new tool for itself! It will autonomously write its own Python plugin code directly to the plugins folder, instantly gaining the exact new ability you requested.
+* **🌍 Internet Tunneling (LocalTunnel/Ngrok):**
+  Instantly expose your local development server to the internet using the native `expose_localhost` tool.
+* **📋 Clipboard & OS Integration:**
+  TagAura can read from and write to your clipboard directly. It can also send Desktop Toast Notifications when background tasks finish.
+* **📂 Real-time Folder Watcher:**
+  Tell TagAura to monitor any folder. Whenever a new file is added, it will autonomously run custom scripts to process it.
 * **🌐 Autonomous Web Search & URL Reading:**
   TagAura isn't isolated. It can search the live web (via DuckDuckGo) and read documentation from URLs to solve complex errors and learn new frameworks on the fly.
 * **⌨️ GUI Automation (Mouse & Keyboard Control):**
