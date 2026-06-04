@@ -53,6 +53,8 @@ def start_chat(provider, model, api_key):
     else:
         os.environ[f"{provider_lower.upper()}_API_KEY"] = api_key
 
+    # Plugin yükleme (Hot Reload için artık while döngüsü içinde yapılacak)
+
     # Sistem Bilgilerini Çekme
     os_name = platform.system()
     os_release = platform.release()
@@ -82,7 +84,27 @@ CRITICAL RULES:
 11. WEB SEARCH: You have access to the internet. If you need documentation or a solution to an error, use `search_web` to find it, then `read_url` to read the page content.
 12. GUI AUTOMATION: You have the `control_gui` tool to physically control the mouse and keyboard using PyAutoGUI python scripts. You can use it to open apps, click buttons, or type text if the user requests it.
 13. BACKGROUND TASKS: You can use `run_background_task` to start daemon threads. Use this for scheduled cron jobs (using time.sleep or schedule module) or heavy processing that shouldn't block the chat interface.
-14. MULTI-AGENT SWARM: You have the `delegate_task` tool. If a task is very complex, requires critical review (like writing a big algorithm), or requires a second opinion, SPAWN A SUB-AGENT to do it for you. The sub-agent will do the heavy lifting and report back to you."""
+14. MULTI-AGENT SWARM: You have the `delegate_task` tool. If a task is very complex, requires critical review (like writing a big algorithm), or requires a second opinion, SPAWN A SUB-AGENT to do it for you. The sub-agent will do the heavy lifting and report back to you.
+15. CLIPBOARD MANAGEMENT: Use `read_clipboard` and `write_clipboard` to interact with the user's copy-paste clipboard.
+16. SYSTEM NOTIFICATIONS: Use `send_notification` to show a desktop toast notification to the user when a long background task finishes.
+17. FOLDER WATCHER: Use `watch_folder` to monitor a folder for new files and run a python script when a new file appears.
+18. INTERNET TUNNELING: Use `expose_localhost` to expose a local port to the internet via Ngrok. Return the public URL to the user.
+19. PLUGINS: You can use any dynamically loaded plugin tools. If the user asks to add a new feature, you can simply write a `.py` file to the `tagaura/plugins/` directory following the plugin schema (`TOOL_SCHEMA` and `execute` function) instead of modifying `agent.py`.
+20. SELF-EXPANDING PLUGINS: If the user asks you to create a new plugin for yourself (e.g. "bana bir plugin oluştur"), you MUST autonomously write a valid python plugin file to the `tagaura/plugins/` directory using the `write_file` tool. Do NOT just give the code to the user. Write it directly to the folder. You MUST strictly use this template:
+```python
+""" + """TOOL_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "your_plugin_name",
+        "description": "Description of what it does",
+        "parameters": {"type": "object", "properties": {"param1": {"type": "string", "description": "..."}}, "required": ["param1"]}
+    }
+}
+def execute(**kwargs):
+    param1 = kwargs.get("param1")
+    # Do logic here
+    return "Result string"
+``` """
 
     # Kalıcı hafızayı (Permanent Memory) yükle
     memory_facts = get_memory()
@@ -138,6 +160,29 @@ CRITICAL RULES:
             messages.append({"role": "user", "content": user_input})
 
             # Modelden yanıt al
+            
+            # Eklentileri (Plugins) Dinamik (Hot-Reload) Yükle
+            import importlib.util
+            plugins_dir = os.path.join(os.path.dirname(__file__), "plugins")
+            if not os.path.exists(plugins_dir):
+                os.makedirs(plugins_dir)
+
+            plugin_tools = []
+            plugin_funcs = {}
+
+            for filename in os.listdir(plugins_dir):
+                if filename.endswith(".py"):
+                    try:
+                        filepath = os.path.join(plugins_dir, filename)
+                        spec = importlib.util.spec_from_file_location(filename[:-3], filepath)
+                        module = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(module)
+                        
+                        if hasattr(module, "TOOL_SCHEMA") and hasattr(module, "execute"):
+                            plugin_tools.append(module.TOOL_SCHEMA)
+                            plugin_funcs[module.TOOL_SCHEMA["function"]["name"]] = module.execute
+                    except Exception as e:
+                        console.print(f"[dim red]Plugin {filename} yüklenirken hata: {e}[/dim red]")
             
             # API'lerin desteklediği asıl model isimleriyle eşleme (Mistral vb.)
             api_model_name = model
@@ -360,8 +405,85 @@ CRITICAL RULES:
                             "required": ["agent_role", "task_description"]
                         }
                     }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "read_clipboard",
+                        "description": "Kullanıcının panosundaki (kopyaladığı) metni okur.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {}
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "write_clipboard",
+                        "description": "Kullanıcının panosuna (kopyalama alanına) metin yazar.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "text": {"type": "string", "description": "Panoya kopyalanacak metin."}
+                            },
+                            "required": ["text"]
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "send_notification",
+                        "description": "İşletim sisteminde sağ altta çıkan bir masaüstü bildirimi (Toast) gönderir.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "title": {"type": "string", "description": "Bildirim başlığı."},
+                                "message": {"type": "string", "description": "Bildirim içeriği."}
+                            },
+                            "required": ["title", "message"]
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "watch_folder",
+                        "description": "Bir klasörü izler. Klasöre yeni bir dosya eklendiğinde verilen Python kodunu çalıştırır.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "folder_path": {"type": "string", "description": "İzlenecek klasörün tam yolu."},
+                                "script": {"type": "string", "description": "Yeni dosya eklendiğinde çalışacak Python kodu."}
+                            },
+                            "required": ["folder_path", "script"]
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "expose_localhost",
+                        "description": "Yerel bilgisayardaki bir portu ngrok aracılığıyla tüm dünyaya açar ve genel bir internet adresi (URL) döndürür.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "port": {"type": "integer", "description": "İnternete açılacak yerel port numarası (Örn: 8000, 3000)"}
+                            },
+                            "required": ["port"]
+                        }
+                    }
                 }
             ]
+
+            # Yüklenen Plugin araçlarını listeye ekle
+            try:
+                tools.extend(plugin_tools)
+            except:
+                pass
+
+            console.print("\n[dim cyan]Senin için buradayım. (Çıkmak için 'exit' veya 'quit' yazın)[/dim cyan]")
 
             MAX_ITERATIONS = 5
             for iteration in range(MAX_ITERATIONS):
@@ -662,6 +784,95 @@ CRITICAL RULES:
                                 console.print(f"[dim green]✅ Sub-Agent [{agent_role}] finished successfully.[/dim green]")
                             except Exception as e:
                                 output = f"Failed to delegate task: {str(e)}"
+                                
+                        elif func_name == "read_clipboard":
+                            try:
+                                import pyperclip
+                                output = pyperclip.paste()
+                                console.print(f"\n[dim cyan]📋 Clipboard Read: {len(output)} chars[/dim cyan]")
+                            except Exception as e:
+                                output = f"Error reading clipboard: {str(e)}"
+                                
+                        elif func_name == "write_clipboard":
+                            text = args.get("text", "")
+                            try:
+                                import pyperclip
+                                pyperclip.copy(text)
+                                console.print("\n[dim cyan]📋 Clipboard Written.[/dim cyan]")
+                                output = "Text copied to clipboard successfully."
+                            except Exception as e:
+                                output = f"Error writing to clipboard: {str(e)}"
+                                
+                        elif func_name == "send_notification":
+                            title = args.get("title", "TagAura")
+                            message = args.get("message", "")
+                            try:
+                                from plyer import notification
+                                notification.notify(
+                                    title=title,
+                                    message=message,
+                                    app_name="TagAura",
+                                    timeout=10
+                                )
+                                console.print(f"\n[dim yellow]🔔 Notification Sent: {title}[/dim yellow]")
+                                output = "Notification sent successfully."
+                            except Exception as e:
+                                output = f"Error sending notification: {str(e)}"
+                                
+                        elif func_name == "watch_folder":
+                            folder_path = args.get("folder_path", "")
+                            script = args.get("script", "")
+                            try:
+                                import threading
+                                import time
+                                from watchdog.observers import Observer
+                                from watchdog.events import FileSystemEventHandler
+                                
+                                class CustomHandler(FileSystemEventHandler):
+                                    def on_created(self, event):
+                                        if not event.is_directory:
+                                            local_env = {"event": event}
+                                            try:
+                                                exec(script, globals(), local_env)
+                                            except Exception as e:
+                                                with open("tagaura_watchdog_error.log", "a", encoding="utf-8") as f:
+                                                    f.write(f"Error processing {event.src_path}: {str(e)}\n")
+                                                    
+                                def start_watching(path, handler):
+                                    observer = Observer()
+                                    observer.schedule(handler, path, recursive=False)
+                                    observer.start()
+                                    try:
+                                        while True:
+                                            time.sleep(1)
+                                    except:
+                                        observer.stop()
+                                    observer.join()
+                                    
+                                handler = CustomHandler()
+                                t = threading.Thread(target=start_watching, args=(folder_path, handler), daemon=True)
+                                t.start()
+                                console.print(f"\n[dim magenta]👁️ Started watching folder: {folder_path}[/dim magenta]")
+                                output = f"Started watching '{folder_path}' successfully in background."
+                            except Exception as e:
+                                output = f"Error starting folder watch: {str(e)}"
+                                
+                        elif func_name == "expose_localhost":
+                            port = args.get("port", 80)
+                            try:
+                                from pyngrok import ngrok
+                                public_url = ngrok.connect(port)
+                                console.print(f"\n[dim green]🌍 Localhost exposed: {public_url.public_url}[/dim green]")
+                                output = f"Successfully exposed port {port}. Public URL: {public_url.public_url}"
+                            except Exception as e:
+                                output = f"Error exposing localhost: {str(e)}\n(Note: You may need to authenticate ngrok first using 'tga run_terminal_command ngrok config add-authtoken <token>')"
+                                
+                        elif func_name in plugin_funcs:
+                            try:
+                                console.print(f"\n[dim magenta]🧩 Running Plugin: {func_name}[/dim magenta]")
+                                output = str(plugin_funcs[func_name](**args))
+                            except Exception as e:
+                                output = f"Plugin execution error: {str(e)}"
                             
                         messages.append({
                             "role": "tool",
