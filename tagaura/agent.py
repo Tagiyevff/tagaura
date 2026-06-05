@@ -381,6 +381,23 @@ def execute(**kwargs):
                 {
                     "type": "function",
                     "function": {
+                        "name": "control_browser",
+                        "description": "Görünmez (Headless) bir tarayıcı (Chromium) başlatır ve verilen Python Playwright kodunu çalıştırır. Sayfalarda gezinmek, form doldurmak, tıklamak ve veri çekmek için kullanılır. Kod asenkron olmamalı, 'sync_playwright' mantığıyla yazılmalıdır. İşlem sonunda elde edilen veriyi 'result' adlı değişkene atamalısınız.",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "playwright_script": {
+                                    "type": "string",
+                                    "description": "Çalıştırılacak Playwright python kodu. 'page' objesi sizin için önceden tanımlanmıştır. Örn: 'page.goto(\"https://google.com\")\\npage.fill(\"textarea\", \"TagAura\")\\npage.keyboard.press(\"Enter\")\\npage.wait_for_timeout(2000)\\nresult = page.title()'"
+                                }
+                            },
+                            "required": ["playwright_script"]
+                        }
+                    }
+                },
+                {
+                    "type": "function",
+                    "function": {
                         "name": "control_gui",
                         "description": "Bilgisayarın faresi ve klavyesi üzerinde fiziksel kontrol sağlar. Ekranda tıklama yapmak, yazı yazmak veya kısayol tuşlarına basmak için Python PyAutoGUI kodlarını (script) çalıştırır.",
                         "parameters": {
@@ -756,6 +773,45 @@ def execute(**kwargs):
                                     output = output[:15000] + "\n\n... [SAYFA ÇOK UZUN, KESİLDİ]"
                             except Exception as e:
                                 output = f"Sayfa okuma hatası: {str(e)}"
+                        elif func_name == "control_browser":
+                            script = args.get("playwright_script", "")
+                            console.print(f"\n[dim cyan]🕷️ Otonom Sörfçü (Browser) çalışıyor...[/dim cyan]")
+                            
+                            try:
+                                from playwright.sync_api import sync_playwright
+                            except ImportError:
+                                output = "Hata: 'playwright' kütüphanesi kurulu değil. Lütfen 'pip install playwright' komutunu çalıştırın."
+                                continue
+
+                            try:
+                                with sync_playwright() as p:
+                                    try:
+                                        browser = p.chromium.launch(headless=True)
+                                    except Exception as e:
+                                        if "Executable doesn't exist" in str(e):
+                                            console.print("[dim yellow]Tarayıcı motoru (Chromium) bulunamadı. Otonom olarak indiriliyor... Lütfen bekleyin.[/dim yellow]")
+                                            import subprocess
+                                            subprocess.run(["playwright", "install", "chromium"], check=True)
+                                            browser = p.chromium.launch(headless=True)
+                                        else:
+                                            raise e
+
+                                    context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                                    page = context.new_page()
+                                    
+                                    # Güvenlik ve çalışma alanı: Kullanıcının yazdığı script'i lokal bir değişkende (result) yakalayacağız.
+                                    local_env = {"page": page, "result": None}
+                                    
+                                    try:
+                                        exec(script, {}, local_env)
+                                        output = str(local_env.get("result", "İşlem başarılı ancak 'result' değişkenine bir veri atanmadı."))
+                                    except Exception as e:
+                                        output = f"Playwright Script Hatası: {str(e)}"
+                                    finally:
+                                        browser.close()
+                                        
+                            except Exception as e:
+                                output = f"Tarayıcı başlatılamadı: {str(e)}"
                                 
                         elif func_name == "control_gui":
                             action_script = args.get("action_script", "")
