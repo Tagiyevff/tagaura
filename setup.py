@@ -20,7 +20,8 @@ setup(
         "watchdog",
         "pyngrok",
         "SpeechRecognition",
-        "pyaudio"
+        "pyaudio",
+        "playwright"
     ],
     entry_points={
         "console_scripts": [
